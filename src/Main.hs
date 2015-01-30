@@ -27,8 +27,10 @@ translate f t p = do
   case resp of
    Left err -> return (Just ("An error occurred while contacting the API: " <> (B.pack . show $ err)))
    Right resp' -> do
-     let body = resp' ^. responseBody . to BL.toStrict
-     return $ body ^? key "tuc" . nth 0 . key "phrase" . key "text" . _String . to T.encodeUtf8
+     let body  = resp' ^. responseBody . to BL.toStrict
+         word1 = body ^? key "tuc" . nth 0 . key "phrase" . key "text" . _String . to T.encodeUtf8
+         defn1 = body ^.. key "tuc" . nth 0 . key "meanings" . values . key "text" . _String . to T.encodeUtf8
+     return $ fmap (\x -> x <> " " <> B.pack (show (zip [(1 :: Integer)..] defn1))) word1
 
 onMessage :: EventFunc
 onMessage s m = genResponse (m ^. msg . to B.unpack)
@@ -47,7 +49,7 @@ ircEvents :: [IrcEvent]
 ircEvents = [(Privmsg onMessage)]
 
 freenode :: IrcConfig
-freenode = (mkDefaultConfig "195.154.200.232" "traductor") { cChannels = ["#dagd"]
+freenode = (mkDefaultConfig "195.154.200.232" "traductor") { cChannels = ["#dagd", "#qsolog"]
                                                            , cEvents = ircEvents
                                                            }
 
