@@ -11,7 +11,11 @@ import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.List
 import Data.Maybe
 import Data.Monoid
+import qualified Data.Text as T
+import qualified Data.Text.Lazy.Builder as T
 import qualified Data.Text.Encoding as T
+import qualified Data.Text.Lazy as TL
+import HTMLEntities.Decoder
 import Network.HTTP.Client hiding (responseBody)
 import Network.HTTP.Types (urlEncode)
 import Network.SimpleIRC
@@ -30,7 +34,8 @@ translate f t p = do
      let body  = resp' ^. responseBody . to BL.toStrict
          word1 = body ^? key "tuc" . nth 0 . key "phrase" . key "text" . _String . to T.encodeUtf8
          defn1 = body ^.. key "tuc" . nth 0 . key "meanings" . values . key "text" . _String . to T.encodeUtf8
-     return $ fmap (\x -> x <> " " <> B.pack (show (zip [(1 :: Integer)..] defn1))) word1
+         defnitionTuple = T.encodeUtf8 . TL.toStrict . T.toLazyText . htmlEncodedText . T.pack . show . zip [(1 :: Integer)..] $ defn1
+     return $ fmap (\x -> x <> " " <> defnitionTuple) word1
 
 onMessage :: EventFunc
 onMessage s m = genResponse (m ^. msg . to B.unpack)
