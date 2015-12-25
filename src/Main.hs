@@ -43,12 +43,17 @@ onMessage s m = genResponse (m ^. msg . to B.unpack)
     listToTuple (x:y:zs) = Just (x, y, zs)
     listToTuple _        = Nothing
 
-    genResponse (stripPrefix ":translate " -> Just (listToTuple . words -> Just (fromLang, toLang, unwords -> phrase))) = do
+    genResponse (stripPrefix ":translate " -> Just (listToTuple . words -> Just (fromLang, toLang, unwords -> phrase))) =
+      generateTranslation fromLang toLang phrase
+    genResponse (stripPrefix ":tr " -> Just (listToTuple . words -> Just (fromLang, toLang, unwords -> phrase))) =
+      generateTranslation fromLang toLang phrase
+    genResponse _ = return ()
+
+    generateTranslation fromLang toLang phrase = do
       translation <- translate fromLang toLang phrase
       case translation of
        Just t -> sendMsg s (fromJust . mChan $ m) t
        Nothing -> sendMsg s (fromJust . mChan $ m) "Either an error occurred or no translation was found."
-    genResponse _ = return ()
 
 ircEvents :: [IrcEvent]
 ircEvents = [(Privmsg onMessage)]
